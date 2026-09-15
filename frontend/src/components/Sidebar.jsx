@@ -57,10 +57,9 @@ function Sidebar({
         dark:border-slate-800
         dark:bg-slate-900
 
-        ${
-          collapsed
-            ? "w-[88px]"
-            : "w-64"
+        ${collapsed
+          ? "w-[88px]"
+          : "w-64"
         }
       `}
     >
@@ -80,10 +79,9 @@ function Sidebar({
           border-slate-200
           dark:border-slate-800
 
-          ${
-            collapsed
-              ? "justify-center px-2"
-              : "justify-between px-5"
+          ${collapsed
+            ? "justify-center px-2"
+            : "justify-between px-5"
           }
         `}
       >
@@ -95,10 +93,9 @@ function Sidebar({
             min-w-0
             items-center
 
-            ${
-              collapsed
-                ? "hidden"
-                : "gap-3"
+            ${collapsed
+              ? "hidden"
+              : "gap-3"
             }
           `}
         >
@@ -135,13 +132,6 @@ function Sidebar({
           </span>
 
         </div>
-
-        {/* =================================================
-            SIDEBAR TOGGLE BUTTON
-
-            THIS IS THE BUTTON YOU WANTED
-        ================================================== */}
-
         <button
           type="button"
           onClick={() =>
@@ -179,10 +169,9 @@ function Sidebar({
             dark:hover:bg-slate-800
             dark:hover:text-white
 
-            ${
-              collapsed
-                ? "mx-auto"
-                : ""
+            ${collapsed
+              ? "mx-auto"
+              : ""
             }
           `}
         >
@@ -211,10 +200,9 @@ function Sidebar({
           overflow-y-auto
           py-7
 
-          ${
-            collapsed
-              ? "px-2"
-              : "px-4"
+          ${collapsed
+            ? "px-2"
+            : "px-4"
           }
         `}
       >
@@ -237,10 +225,9 @@ function Sidebar({
             transition-all
             duration-200
 
-            ${
-              collapsed
-                ? "h-0 opacity-0"
-                : "h-auto px-4 opacity-100"
+            ${collapsed
+              ? "h-0 opacity-0"
+              : "h-auto px-4 opacity-100"
             }
           `}
         >
@@ -276,22 +263,20 @@ function Sidebar({
                     transition-all
                     duration-200
 
-                    ${
-                      collapsed
-                        ? "justify-center px-2"
-                        : "gap-4 px-4"
-                    }
+                    ${collapsed
+                    ? "justify-center px-2"
+                    : "gap-4 px-4"
+                  }
 
-                    ${
-                      isActive
-                        ? `
+                    ${isActive
+                    ? `
                           bg-indigo-50
                           text-indigo-600
 
                           dark:bg-indigo-950/40
                           dark:text-indigo-400
                         `
-                        : `
+                    : `
                           text-slate-600
 
                           hover:bg-slate-100
@@ -301,7 +286,7 @@ function Sidebar({
                           dark:hover:bg-slate-800
                           dark:hover:text-white
                         `
-                    }
+                  }
                   `
                 }
               >
@@ -325,10 +310,9 @@ function Sidebar({
                         transition-all
                         duration-200
 
-                        ${
-                          collapsed
-                            ? "w-0 opacity-0"
-                            : "w-auto opacity-100"
+                        ${collapsed
+                          ? "w-0 opacity-0"
+                          : "w-auto opacity-100"
                         }
                       `}
                     >
@@ -355,74 +339,93 @@ function Sidebar({
           border-slate-200
           dark:border-slate-800
 
-          ${
-            collapsed
-              ? "p-2"
-              : "p-4"
+          ${collapsed
+            ? "p-2"
+            : "p-4"
           }
         `}
       >
 
         {/* Help */}
-        <button
-          type="button"
+        <NavLink
+          to="/help-support"
           title={
             collapsed
               ? "Help & Support"
               : undefined
           }
-          className={`
-            flex
-            h-11
-            w-full
-            items-center
-            rounded-xl
+          className={({ isActive }) =>
+            `
+              flex
+              h-11
+              w-full
+              items-center
+              rounded-xl
 
-            text-sm
-            font-medium
-
-            text-slate-500
-
-            transition-all
-            duration-200
-
-            hover:bg-slate-100
-            hover:text-slate-900
-
-            dark:text-slate-400
-            dark:hover:bg-slate-800
-            dark:hover:text-white
-
-            ${
-              collapsed
-                ? "justify-center"
-                : "gap-3 px-4"
-            }
-          `}
-        >
-          <CircleHelp
-            size={19}
-            className="shrink-0"
-          />
-
-          <span
-            className={`
-              overflow-hidden
-              whitespace-nowrap
+              text-sm
+              font-medium
 
               transition-all
               duration-200
 
-              ${
-                collapsed
-                  ? "w-0 opacity-0"
-                  : "w-auto opacity-100"
-              }
-            `}
-          >
-            Help & Support
-          </span>
-        </button>
+              ${collapsed
+              ? "justify-center"
+              : "gap-3 px-4"
+            }
+
+              ${isActive
+              ? `
+                    bg-indigo-50
+                    text-indigo-600
+
+                    dark:bg-indigo-950/40
+                    dark:text-indigo-400
+                  `
+              : `
+                    text-slate-500
+
+                    hover:bg-slate-100
+                    hover:text-slate-900
+
+                    dark:text-slate-400
+                    dark:hover:bg-slate-800
+                    dark:hover:text-white
+                  `
+            }
+            `
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <CircleHelp
+                size={19}
+                className="shrink-0"
+                strokeWidth={
+                  isActive
+                    ? 2.2
+                    : 1.8
+                }
+              />
+
+              <span
+                className={`
+                  overflow-hidden
+                  whitespace-nowrap
+
+                  transition-all
+                  duration-200
+
+                  ${collapsed
+                    ? "w-0 opacity-0"
+                    : "w-auto opacity-100"
+                  }
+                `}
+              >
+                Help & Support
+              </span>
+            </>
+          )}
+        </NavLink>
 
         {/* Admin */}
         <div
@@ -442,10 +445,9 @@ function Sidebar({
             transition-all
             duration-200
 
-            ${
-              collapsed
-                ? "justify-center p-2"
-                : "items-center gap-3 p-3"
+            ${collapsed
+              ? "justify-center p-2"
+              : "items-center gap-3 p-3"
             }
           `}
         >
@@ -481,10 +483,9 @@ function Sidebar({
               transition-all
               duration-200
 
-              ${
-                collapsed
-                  ? "w-0 opacity-0"
-                  : "w-auto opacity-100"
+              ${collapsed
+                ? "w-0 opacity-0"
+                : "w-auto opacity-100"
               }
             `}
           >

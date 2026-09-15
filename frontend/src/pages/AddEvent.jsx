@@ -20,16 +20,12 @@ function AddEvent() {
   // Today's date
   const today = new Date().toISOString().split("T")[0];
 
-  // ==========================================
-  // FORM DATA
-  // ==========================================
-
   const [formData, setFormData] = useState({
     // Basic Information
     title: "",
     type: "",
     description: "",
-    status: "Scheduled",
+    status: "Upcoming",
 
     // Date & Time
     startDate: "",
@@ -59,18 +55,13 @@ function AddEvent() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ==========================================
-  // HANDLE INPUT CHANGE
-  // ==========================================
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Contact number - only 10 digits
     if (name === "contactNumber") {
       const onlyNumbers = value.replace(/\D/g, "");
 
-      // Maximum 10 digits
       if (onlyNumbers.length > 10) {
         return;
       }
@@ -104,32 +95,16 @@ function AddEvent() {
     }
   };
 
-  // ==========================================
-  // VALIDATE FORM
-  // ==========================================
-
   const validateForm = () => {
     const newErrors = {};
-
-    // ------------------------------------------
-    // Event Name
-    // ------------------------------------------
 
     if (!formData.title.trim()) {
       newErrors.title = "Event name is required.";
     }
 
-    // ------------------------------------------
-    // Event Type
-    // ------------------------------------------
-
     if (!formData.type) {
       newErrors.type = "Please select event type.";
     }
-
-    // ------------------------------------------
-    // Start Date
-    // ------------------------------------------
 
     if (!formData.startDate) {
       newErrors.startDate = "Start date is required.";
@@ -138,17 +113,9 @@ function AddEvent() {
         "Start date cannot be in the past.";
     }
 
-    // ------------------------------------------
-    // Start Time
-    // ------------------------------------------
-
     if (!formData.startTime) {
       newErrors.startTime = "Start time is required.";
     }
-
-    // ------------------------------------------
-    // End Date
-    // ------------------------------------------
 
     if (!formData.endDate) {
       newErrors.endDate = "End date is required.";
@@ -163,17 +130,9 @@ function AddEvent() {
         "End date cannot be before start date.";
     }
 
-    // ------------------------------------------
-    // End Time
-    // ------------------------------------------
-
     if (!formData.endTime) {
       newErrors.endTime = "End time is required.";
     }
-
-    // ------------------------------------------
-    // Same-day time validation
-    // ------------------------------------------
 
     if (
       formData.startDate &&
@@ -187,26 +146,14 @@ function AddEvent() {
         "End time must be after start time.";
     }
 
-    // ------------------------------------------
-    // Venue
-    // ------------------------------------------
-
     if (!formData.venue.trim()) {
       newErrors.venue = "Venue is required.";
     }
-
-    // ------------------------------------------
-    // Organizer
-    // ------------------------------------------
 
     if (!formData.organizer.trim()) {
       newErrors.organizer =
         "Organizer name is required.";
     }
-
-    // ------------------------------------------
-    // Contact Number
-    // ------------------------------------------
 
     if (!formData.contactNumber) {
       newErrors.contactNumber =
@@ -217,10 +164,6 @@ function AddEvent() {
       newErrors.contactNumber =
         "Contact number must be exactly 10 digits.";
     }
-
-    // ------------------------------------------
-    // Email
-    // ------------------------------------------
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required.";
@@ -233,10 +176,6 @@ function AddEvent() {
         "Please enter a valid email address.";
     }
 
-    // ------------------------------------------
-    // Maximum Participants
-    // ------------------------------------------
-
     if (!formData.capacity) {
       newErrors.capacity =
         "Maximum participants is required.";
@@ -244,10 +183,6 @@ function AddEvent() {
       newErrors.capacity =
         "Capacity must be greater than 0.";
     }
-
-    // ------------------------------------------
-    // Registration Deadline
-    // ------------------------------------------
 
     if (
       formData.registrationRequired &&
@@ -287,7 +222,7 @@ function AddEvent() {
   // SUBMIT FORM
   // ==========================================
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const isValid = validateForm();
@@ -296,48 +231,64 @@ function AddEvent() {
       console.log("❌ Event form validation failed");
       return;
     }
+    try {
+      setIsSubmitting(true);
+      const newEvent = {
+        title: formData.title.trim(),
+        type: formData.type,
+        description: formData.description.trim(),
+        status: formData.status,
 
-    setIsSubmitting(true);
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        endDate: formData.endDate,
+        endTime: formData.endTime,
 
-    const newEvent = {
-      ...formData,
-      capacity: Number(formData.capacity),
-    };
+        venue: formData.venue.trim(),
+        room: formData.room.trim(),
+        address: formData.address.trim(),
 
-    // ==========================================
-    // CONSOLE LOG
-    // ==========================================
+        organizer: formData.organizer.trim(),
+        contactNumber: formData.contactNumber,
+        email: formData.email.trim(),
 
-    console.log(
-      "========================================"
-    );
+        capacity: Number(formData.capacity),
+        registrationRequired:
+          formData.registrationRequired,
 
-    console.log("✅ NEW EVENT CREATED");
+        registrationDeadline:
+          formData.registrationRequired &&
+            formData.registrationDeadline
+            ? formData.registrationDeadline
+            : null,
 
-    console.log(
-      "========================================"
-    );
+        notes: formData.notes.trim(),
+      };
 
-    console.log(newEvent);
+      console.log("📤 CREATING EVENT");
 
-    console.log(
-      "========================================"
-    );
+      console.log("========================================>",newEvent);
 
-    // Add event to EventContext
-    addEvent(newEvent);
+      const createdEvent = await addEvent(newEvent);
 
-    // Redirect to Events page
-    navigate("/events");
+      console.log("✅ EVENT CREATED SUCCESSFULLY");
+      console.log(createdEvent);
+
+      navigate("/events");
+    } catch (error) {
+      console.error(
+        "❌ Failed to create event:",
+        error
+      );
+
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
-
-        {/* ======================================
-            HEADER
-        ====================================== */}
 
         <div className="mb-6">
           <Link
@@ -357,15 +308,7 @@ function AddEvent() {
           </p>
         </div>
 
-        {/* ======================================
-            FORM
-        ====================================== */}
-
         <form onSubmit={handleSubmit}>
-
-          {/* ======================================
-              BASIC INFORMATION
-          ====================================== */}
 
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -394,11 +337,10 @@ function AddEvent() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="Enter event name"
-                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                    errors.title
-                      ? "border-red-500 focus:ring-red-100"
-                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                  }`}
+                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.title
+                    ? "border-red-500 focus:ring-red-100"
+                    : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                    }`}
                 />
 
                 {errors.title && (
@@ -419,11 +361,10 @@ function AddEvent() {
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
-                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm text-slate-700 outline-none focus:ring-2 dark:bg-slate-800 dark:text-slate-300 ${
-                    errors.type
-                      ? "border-red-500"
-                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                  }`}
+                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm text-slate-700 outline-none focus:ring-2 dark:bg-slate-800 dark:text-slate-300 ${errors.type
+                    ? "border-red-500"
+                    : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                    }`}
                 >
                   <option value="">
                     Select event type
@@ -481,12 +422,12 @@ function AddEvent() {
                   onChange={handleChange}
                   className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                 >
-                  <option value="Scheduled">
-                    Scheduled
+                  <option value="Upcoming">
+                    Upcoming
                   </option>
 
-                  <option value="Pending">
-                    Pending
+                  <option value="Ongoing">
+                    Ongoing
                   </option>
 
                   <option value="Completed">
@@ -516,10 +457,6 @@ function AddEvent() {
               </div>
             </div>
           </div>
-
-          {/* ======================================
-              DATE & TIME
-          ====================================== */}
 
           <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -557,11 +494,10 @@ function AddEvent() {
                   value={formData.startDate}
                   onChange={handleChange}
                   min={today}
-                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                    errors.startDate
-                      ? "border-red-500 focus:ring-red-100"
-                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                  }`}
+                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.startDate
+                    ? "border-red-500 focus:ring-red-100"
+                    : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                    }`}
                 />
 
                 <p className="mt-1 text-xs text-slate-400">
@@ -593,11 +529,10 @@ function AddEvent() {
                     name="startTime"
                     value={formData.startTime}
                     onChange={handleChange}
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                      errors.startTime
-                        ? "border-red-500 focus:ring-red-100"
-                        : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                    }`}
+                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.startTime
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                      }`}
                   />
                 </div>
 
@@ -621,11 +556,10 @@ function AddEvent() {
                   value={formData.endDate}
                   onChange={handleChange}
                   min={formData.startDate || today}
-                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                    errors.endDate
-                      ? "border-red-500 focus:ring-red-100"
-                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                  }`}
+                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.endDate
+                    ? "border-red-500 focus:ring-red-100"
+                    : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                    }`}
                 />
 
                 <p className="mt-1 text-xs text-slate-400">
@@ -657,11 +591,10 @@ function AddEvent() {
                     name="endTime"
                     value={formData.endTime}
                     onChange={handleChange}
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                      errors.endTime
-                        ? "border-red-500 focus:ring-red-100"
-                        : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                    }`}
+                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.endTime
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                      }`}
                   />
                 </div>
 
@@ -674,9 +607,6 @@ function AddEvent() {
             </div>
           </div>
 
-          {/* ======================================
-              LOCATION
-          ====================================== */}
 
           <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -714,11 +644,10 @@ function AddEvent() {
                   value={formData.venue}
                   onChange={handleChange}
                   placeholder="Main Auditorium"
-                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                    errors.venue
-                      ? "border-red-500 focus:ring-red-100"
-                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                  }`}
+                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.venue
+                    ? "border-red-500 focus:ring-red-100"
+                    : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                    }`}
                 />
 
                 {errors.venue && (
@@ -802,11 +731,10 @@ function AddEvent() {
                   value={formData.organizer}
                   onChange={handleChange}
                   placeholder="Enter organizer name"
-                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                    errors.organizer
-                      ? "border-red-500 focus:ring-red-100"
-                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                  }`}
+                  className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.organizer
+                    ? "border-red-500 focus:ring-red-100"
+                    : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                    }`}
                 />
 
                 {errors.organizer && (
@@ -837,11 +765,10 @@ function AddEvent() {
                     inputMode="numeric"
                     maxLength={10}
                     placeholder="9876543210"
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                      errors.contactNumber
-                        ? "border-red-500 focus:ring-red-100"
-                        : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                    }`}
+                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.contactNumber
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                      }`}
                   />
                 </div>
 
@@ -875,11 +802,10 @@ function AddEvent() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="organizer@example.com"
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                      errors.email
-                        ? "border-red-500 focus:ring-red-100"
-                        : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                    }`}
+                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.email
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                      }`}
                   />
                 </div>
 
@@ -891,10 +817,6 @@ function AddEvent() {
               </div>
             </div>
           </div>
-
-          {/* ======================================
-              REGISTRATION SETTINGS
-          ====================================== */}
 
           <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -930,11 +852,10 @@ function AddEvent() {
                     onChange={handleChange}
                     min="1"
                     placeholder="500"
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                      errors.capacity
-                        ? "border-red-500 focus:ring-red-100"
-                        : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                    }`}
+                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.capacity
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                      }`}
                   />
                 </div>
 
@@ -977,11 +898,10 @@ function AddEvent() {
                     onChange={handleChange}
                     min={today}
                     max={formData.startDate || undefined}
-                    className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                      errors.registrationDeadline
-                        ? "border-red-500 focus:ring-red-100"
-                        : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
-                    }`}
+                    className={`h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${errors.registrationDeadline
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 dark:border-slate-700"
+                      }`}
                   />
 
                   {errors.registrationDeadline && (

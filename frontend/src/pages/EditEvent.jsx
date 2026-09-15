@@ -16,17 +16,18 @@ function EditEvent() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { events, updateEvent } = useEvents();
+  const {
+    getEventById,
+    updateEvent,
+  } = useEvents();
 
   const today = new Date().toISOString().split("T")[0];
-
-  const event = events.find((item) => String(item.id) === String(id));
 
   const [formData, setFormData] = useState({
     title: "",
     type: "",
     description: "",
-    status: "Scheduled",
+    status: "Upcoming",
 
     startDate: "",
     startTime: "",
@@ -48,49 +49,116 @@ function EditEvent() {
   });
 
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eventNotFound, setEventNotFound] = useState(false);
+  const [serverError, setServerError] = useState("");
 
-  // Load selected event
-  useEffect(() => {
-    if (event) {
-      setFormData({
-        title: event.title || "",
-        type: event.type || "",
-        description: event.description || "",
-        status: event.status || "Scheduled",
+  // Convert MongoDB date into YYYY-MM-DD
+  const formatDateForInput = (date) => {
+    if (!date) return "";
 
-        startDate: event.startDate || "",
-        startTime: event.startTime || "",
-        endDate: event.endDate || "",
-        endTime: event.endTime || "",
-
-        venue: event.venue || "",
-        room: event.room || "",
-        address: event.address || "",
-
-        organizer: event.organizer || "",
-        contactNumber: event.contactNumber || "",
-        email: event.email || "",
-
-        capacity: event.capacity || "",
-        registrationRequired:
-          event.registrationRequired !== undefined
-            ? event.registrationRequired
-            : true,
-        registrationDeadline: event.registrationDeadline || "",
-        notes: event.notes || "",
-      });
+    if (typeof date === "string") {
+      return date.includes("T")
+        ? date.split("T")[0]
+        : date;
     }
-  }, [event]);
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "";
+    }
+
+    return parsedDate.toISOString().split("T")[0];
+  };
+
+  // Load event directly from MongoDB
+  useEffect(() => {
+    const loadEvent = async () => {
+      try {
+        setIsLoading(true);
+        setEventNotFound(false);
+        setServerError("");
+
+        const event = await getEventById(id);
+
+        if (!event) {
+          setEventNotFound(true);
+          return;
+        }
+
+        setFormData({
+          title: event.title || "",
+          type: event.type || "",
+          description: event.description || "",
+          status: event.status || "Upcoming",
+
+          startDate: formatDateForInput(event.startDate),
+          startTime: event.startTime || "",
+          endDate: formatDateForInput(event.endDate),
+          endTime: event.endTime || "",
+
+          venue: event.venue || "",
+          room: event.room || "",
+          address: event.address || "",
+
+          organizer: event.organizer || "",
+          contactNumber: event.contactNumber || "",
+          email: event.email || "",
+
+          capacity:
+            event.capacity !== undefined &&
+            event.capacity !== null
+              ? String(event.capacity)
+              : "",
+
+          registrationRequired:
+            event.registrationRequired !== undefined
+              ? event.registrationRequired
+              : true,
+
+          registrationDeadline:
+            formatDateForInput(
+              event.registrationDeadline
+            ),
+
+          notes: event.notes || "",
+        });
+      } catch (error) {
+        console.error(
+          "Failed to load event:",
+          error
+        );
+
+        if (error.response?.status === 404) {
+          setEventNotFound(true);
+        } else {
+          setServerError(
+            error.response?.data?.message ||
+              "Failed to load event."
+          );
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      loadEvent();
+    }
+  }, [id, getEventById]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Contact number - only 10 digits
+    // Contact number - only numbers, max 10 digits
     if (name === "contactNumber") {
       const onlyNumbers = value.replace(/\D/g, "");
 
-      if (onlyNumbers.length > 10) return;
+      if (onlyNumbers.length > 10) {
+        return;
+      }
 
       setFormData((prev) => ({
         ...prev,
@@ -109,7 +177,10 @@ function EditEvent() {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
     }));
 
     if (errors[name]) {
@@ -118,87 +189,117 @@ function EditEvent() {
         [name]: "",
       }));
     }
+
+    if (serverError) {
+      setServerError("");
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "Event name is required.";
+      newErrors.title =
+        "Event name is required.";
     }
 
     if (!formData.type) {
-      newErrors.type = "Please select event type.";
+      newErrors.type =
+        "Please select event type.";
     }
 
-    // Start date
     if (!formData.startDate) {
-      newErrors.startDate = "Start date is required.";
-    } else if (formData.startDate < today) {
-      newErrors.startDate = "Past dates cannot be selected.";
+      newErrors.startDate =
+        "Start date is required.";
+    } else if (
+      formData.startDate < today
+    ) {
+      newErrors.startDate =
+        "Past dates cannot be selected.";
     }
 
     if (!formData.startTime) {
-      newErrors.startTime = "Start time is required.";
+      newErrors.startTime =
+        "Start time is required.";
     }
 
-    // End date
     if (!formData.endDate) {
-      newErrors.endDate = "End date is required.";
-    } else if (formData.endDate < today) {
-      newErrors.endDate = "Past dates cannot be selected.";
+      newErrors.endDate =
+        "End date is required.";
+    } else if (
+      formData.endDate < today
+    ) {
+      newErrors.endDate =
+        "Past dates cannot be selected.";
     } else if (
       formData.startDate &&
       formData.endDate < formData.startDate
     ) {
-      newErrors.endDate = "End date cannot be before start date.";
+      newErrors.endDate =
+        "End date cannot be before start date.";
     }
 
     if (!formData.endTime) {
-      newErrors.endTime = "End time is required.";
+      newErrors.endTime =
+        "End time is required.";
     }
 
-    // Same-day time validation
     if (
       formData.startDate &&
       formData.endDate &&
-      formData.startDate === formData.endDate &&
+      formData.startDate ===
+        formData.endDate &&
       formData.startTime &&
       formData.endTime &&
-      formData.endTime <= formData.startTime
+      formData.endTime <=
+        formData.startTime
     ) {
-      newErrors.endTime = "End time must be after start time.";
+      newErrors.endTime =
+        "End time must be after start time.";
     }
 
     if (!formData.venue.trim()) {
-      newErrors.venue = "Venue is required.";
+      newErrors.venue =
+        "Venue is required.";
     }
 
     if (!formData.organizer.trim()) {
-      newErrors.organizer = "Organizer name is required.";
+      newErrors.organizer =
+        "Organizer name is required.";
     }
 
     if (!formData.contactNumber) {
-      newErrors.contactNumber = "Contact number is required.";
-    } else if (formData.contactNumber.length !== 10) {
-      newErrors.contactNumber = "Contact number must be exactly 10 digits.";
+      newErrors.contactNumber =
+        "Contact number is required.";
+    } else if (
+      formData.contactNumber.length !== 10
+    ) {
+      newErrors.contactNumber =
+        "Contact number must be exactly 10 digits.";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required.";
+      newErrors.email =
+        "Email is required.";
     } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        formData.email
+      )
     ) {
-      newErrors.email = "Please enter a valid email address.";
+      newErrors.email =
+        "Please enter a valid email address.";
     }
 
     if (!formData.capacity) {
-      newErrors.capacity = "Maximum participants is required.";
-    } else if (Number(formData.capacity) <= 0) {
-      newErrors.capacity = "Capacity must be greater than 0.";
+      newErrors.capacity =
+        "Maximum participants is required.";
+    } else if (
+      Number(formData.capacity) <= 0
+    ) {
+      newErrors.capacity =
+        "Capacity must be greater than 0.";
     }
 
-    // Registration deadline
     if (
       formData.registrationRequired &&
       !formData.registrationDeadline
@@ -220,7 +321,8 @@ function EditEvent() {
       formData.registrationRequired &&
       formData.registrationDeadline &&
       formData.startDate &&
-      formData.registrationDeadline > formData.startDate
+      formData.registrationDeadline >
+        formData.startDate
     ) {
       newErrors.registrationDeadline =
         "Registration deadline must be before or on the event start date.";
@@ -228,39 +330,99 @@ function EditEvent() {
 
     setErrors(newErrors);
 
-    return Object.keys(newErrors).length === 0;
+    return (
+      Object.keys(newErrors).length === 0
+    );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setServerError("");
+
     if (!validateForm()) {
-      console.log("❌ Event update validation failed");
       return;
     }
 
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-    const updatedEvent = {
-      ...formData,
-      capacity: Number(formData.capacity),
-    };
+      const updatedEvent = {
+        title: formData.title.trim(),
+        type: formData.type,
+        description:
+          formData.description.trim(),
+        status: formData.status,
 
-    console.log("========================================");
-    console.log("✏️ EVENT UPDATED");
-    console.log("========================================");
-    console.log(updatedEvent);
-    console.log("========================================");
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        endDate: formData.endDate,
+        endTime: formData.endTime,
 
-    updateEvent(id, updatedEvent);
+        venue: formData.venue.trim(),
+        room: formData.room.trim(),
+        address: formData.address.trim(),
 
-    setIsSubmitting(false);
+        organizer:
+          formData.organizer.trim(),
+        contactNumber:
+          formData.contactNumber,
+        email: formData.email.trim(),
 
-    navigate(`/events/${id}`);
+        capacity: Number(
+          formData.capacity
+        ),
+
+        registrationRequired:
+          formData.registrationRequired,
+
+        registrationDeadline:
+          formData.registrationRequired &&
+          formData.registrationDeadline
+            ? formData.registrationDeadline
+            : null,
+
+        notes: formData.notes.trim(),
+      };
+
+      await updateEvent(
+        id,
+        updatedEvent
+      );
+
+      navigate(`/events/${id}`);
+    } catch (error) {
+      console.error(
+        "Failed to update event:",
+        error
+      );
+
+      setServerError(
+        error.response?.data?.message ||
+          "Failed to update event. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // Loading
+  if (isLoading) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Loading event...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Event not found
-  if (!event) {
+  if (eventNotFound) {
     return (
       <div className="flex min-h-full items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
         <div className="text-center">
@@ -269,7 +431,33 @@ function EditEvent() {
           </h1>
 
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            The event you are trying to edit does not exist.
+            The event you are trying to edit
+            does not exist.
+          </p>
+
+          <Link
+            to="/events"
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            <ArrowLeft size={17} />
+            Back to Events
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Server error
+  if (serverError && !formData.title) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+            Unable to Load Event
+          </h1>
+
+          <p className="mt-2 text-sm text-red-500">
+            {serverError}
           </p>
 
           <Link
@@ -308,11 +496,18 @@ function EditEvent() {
           </p>
         </div>
 
+        {/* API Error */}
+        {serverError && (
+          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            {serverError}
+          </div>
+        )}
+
         <form
           onSubmit={handleSubmit}
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-6"
         >
-          {/* ================= EVENT INFORMATION ================= */}
+          {/* EVENT INFORMATION */}
 
           <div>
             <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
@@ -330,7 +525,10 @@ function EditEvent() {
             {/* Event Name */}
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Event Name <span className="text-red-500">*</span>
+                Event Name{" "}
+                <span className="text-red-500">
+                  *
+                </span>
               </label>
 
               <input
@@ -356,7 +554,10 @@ function EditEvent() {
             {/* Event Type */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Event Type <span className="text-red-500">*</span>
+                Event Type{" "}
+                <span className="text-red-500">
+                  *
+                </span>
               </label>
 
               <select
@@ -369,14 +570,30 @@ function EditEvent() {
                     : "border-slate-200 dark:border-slate-700"
                 }`}
               >
-                <option value="">Select event type</option>
-                <option value="College Event">College Event</option>
-                <option value="Workshop">Workshop</option>
-                <option value="Seminar">Seminar</option>
-                <option value="Conference">Conference</option>
-                <option value="Sports">Sports</option>
-                <option value="Meeting">Meeting</option>
-                <option value="Other">Other</option>
+                <option value="">
+                  Select event type
+                </option>
+                <option value="College Event">
+                  College Event
+                </option>
+                <option value="Workshop">
+                  Workshop
+                </option>
+                <option value="Seminar">
+                  Seminar
+                </option>
+                <option value="Conference">
+                  Conference
+                </option>
+                <option value="Sports">
+                  Sports
+                </option>
+                <option value="Meeting">
+                  Meeting
+                </option>
+                <option value="Other">
+                  Other
+                </option>
               </select>
 
               {errors.type && (
@@ -398,10 +615,18 @@ function EditEvent() {
                 onChange={handleChange}
                 className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
-                <option value="Scheduled">Scheduled</option>
-                <option value="Pending">Pending</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="Upcoming">
+                  Upcoming
+                </option>
+                <option value="Ongoing">
+                  Ongoing
+                </option>
+                <option value="Completed">
+                  Completed
+                </option>
+                <option value="Cancelled">
+                  Cancelled
+                </option>
               </select>
             </div>
 
@@ -422,7 +647,7 @@ function EditEvent() {
             </div>
           </div>
 
-          {/* ================= DATE & TIME ================= */}
+          {/* DATE & TIME */}
 
           <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
             <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
@@ -439,7 +664,10 @@ function EditEvent() {
               {/* Start Date */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Start Date <span className="text-red-500">*</span>
+                  Start Date{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
@@ -455,10 +683,6 @@ function EditEvent() {
                   }`}
                 />
 
-                <p className="mt-1 text-xs text-slate-400">
-                  Past dates are not available.
-                </p>
-
                 {errors.startDate && (
                   <p className="mt-1 text-xs text-red-500">
                     {errors.startDate}
@@ -469,7 +693,10 @@ function EditEvent() {
               {/* Start Time */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Start Time <span className="text-red-500">*</span>
+                  Start Time{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
@@ -494,14 +721,20 @@ function EditEvent() {
               {/* End Date */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  End Date <span className="text-red-500">*</span>
+                  End Date{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
                   type="date"
                   name="endDate"
                   value={formData.endDate}
-                  min={formData.startDate || today}
+                  min={
+                    formData.startDate ||
+                    today
+                  }
                   onChange={handleChange}
                   className={`h-11 w-full rounded-lg border bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 dark:bg-slate-800 dark:text-white ${
                     errors.endDate
@@ -509,10 +742,6 @@ function EditEvent() {
                       : "border-slate-200 dark:border-slate-700"
                   }`}
                 />
-
-                <p className="mt-1 text-xs text-slate-400">
-                  End date cannot be before start date.
-                </p>
 
                 {errors.endDate && (
                   <p className="mt-1 text-xs text-red-500">
@@ -524,7 +753,10 @@ function EditEvent() {
               {/* End Time */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  End Time <span className="text-red-500">*</span>
+                  End Time{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
@@ -548,7 +780,7 @@ function EditEvent() {
             </div>
           </div>
 
-          {/* ================= LOCATION ================= */}
+          {/* LOCATION */}
 
           <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
             <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
@@ -561,7 +793,10 @@ function EditEvent() {
               {/* Venue */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Venue <span className="text-red-500">*</span>
+                  Venue{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
@@ -618,7 +853,7 @@ function EditEvent() {
             </div>
           </div>
 
-          {/* ================= ORGANIZER ================= */}
+          {/* ORGANIZER */}
 
           <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
             <h2 className="text-base font-semibold text-slate-900 dark:text-white">
@@ -630,7 +865,10 @@ function EditEvent() {
               {/* Organizer */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Organizer Name <span className="text-red-500">*</span>
+                  Organizer Name{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
@@ -656,7 +894,10 @@ function EditEvent() {
               {/* Phone */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Contact Number <span className="text-red-500">*</span>
+                  Contact Number{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <div className="relative">
@@ -668,7 +909,9 @@ function EditEvent() {
                   <input
                     type="tel"
                     name="contactNumber"
-                    value={formData.contactNumber}
+                    value={
+                      formData.contactNumber
+                    }
                     onChange={handleChange}
                     placeholder="10 digit mobile number"
                     className={`h-11 w-full rounded-lg border bg-slate-50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 dark:bg-slate-800 dark:text-white ${
@@ -681,7 +924,9 @@ function EditEvent() {
 
                 {errors.contactNumber && (
                   <p className="mt-1 text-xs text-red-500">
-                    {errors.contactNumber}
+                    {
+                      errors.contactNumber
+                    }
                   </p>
                 )}
               </div>
@@ -689,7 +934,10 @@ function EditEvent() {
               {/* Email */}
               <div className="md:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Email <span className="text-red-500">*</span>
+                  Email{" "}
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <div className="relative">
@@ -721,7 +969,7 @@ function EditEvent() {
             </div>
           </div>
 
-          {/* ================= REGISTRATION ================= */}
+          {/* REGISTRATION */}
 
           <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
             <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
@@ -735,7 +983,9 @@ function EditEvent() {
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Maximum Participants{" "}
-                  <span className="text-red-500">*</span>
+                  <span className="text-red-500">
+                    *
+                  </span>
                 </label>
 
                 <input
@@ -768,10 +1018,17 @@ function EditEvent() {
                 <input
                   type="date"
                   name="registrationDeadline"
-                  value={formData.registrationDeadline}
+                  value={
+                    formData.registrationDeadline
+                  }
                   min={today}
-                  max={formData.startDate || undefined}
-                  disabled={!formData.registrationRequired}
+                  max={
+                    formData.startDate ||
+                    undefined
+                  }
+                  disabled={
+                    !formData.registrationRequired
+                  }
                   onChange={handleChange}
                   className={`h-11 w-full rounded-lg border bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-800 dark:text-white ${
                     errors.registrationDeadline
@@ -782,7 +1039,9 @@ function EditEvent() {
 
                 {errors.registrationDeadline && (
                   <p className="mt-1 text-xs text-red-500">
-                    {errors.registrationDeadline}
+                    {
+                      errors.registrationDeadline
+                    }
                   </p>
                 )}
               </div>
@@ -793,20 +1052,23 @@ function EditEvent() {
                   <input
                     type="checkbox"
                     name="registrationRequired"
-                    checked={formData.registrationRequired}
+                    checked={
+                      formData.registrationRequired
+                    }
                     onChange={handleChange}
                     className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                   />
 
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Registration is required for this event
+                    Registration is required
+                    for this event
                   </span>
                 </label>
               </div>
             </div>
           </div>
 
-          {/* ================= NOTES ================= */}
+          {/* NOTES */}
 
           <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
             <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -823,7 +1085,7 @@ function EditEvent() {
             />
           </div>
 
-          {/* ================= ACTIONS ================= */}
+          {/* ACTIONS */}
 
           <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
 
@@ -840,7 +1102,10 @@ function EditEvent() {
               className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-slate-950 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
             >
               <Save size={17} />
-              {isSubmitting ? "Updating..." : "Update Event"}
+
+              {isSubmitting
+                ? "Updating..."
+                : "Update Event"}
             </button>
           </div>
         </form>

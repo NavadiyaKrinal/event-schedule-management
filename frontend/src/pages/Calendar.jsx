@@ -1,16 +1,163 @@
+import { useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import { useEvents } from "../context/EventContext";
 
 function Calendar() {
-  const days = [
-    1, 2, 3, 4, 5, 6, 7,
-    8, 9, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21,
-    22, 23, 24, 25, 26, 27, 28,
-    29, 30,
-  ];
+  const { events, loading, error } = useEvents();
+
+  // ==========================================
+  // CURRENT MONTH
+  // ==========================================
+
+  const [currentDate, setCurrentDate] = useState(
+    new Date()
+  );
+
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+
+  // ==========================================
+  // MONTH NAME
+  // ==========================================
+
+  const monthName = currentDate.toLocaleDateString(
+    "en-IN",
+    {
+      month: "long",
+      year: "numeric",
+    }
+  );
+
+  // ==========================================
+  // DAYS IN CURRENT MONTH
+  // ==========================================
+
+  const daysInMonth = new Date(
+    currentYear,
+    currentMonth + 1,
+    0
+  ).getDate();
+
+  // ==========================================
+  // FIRST DAY OF CURRENT MONTH
+  // ==========================================
+
+  const firstDayOfMonth = new Date(
+    currentYear,
+    currentMonth,
+    1
+  ).getDay();
+
+  // ==========================================
+  // CALENDAR DAYS
+  // ==========================================
+
+  const calendarDays = useMemo(() => {
+    const days = [];
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(null);
+    }
+
+    // Actual days
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    return days;
+  }, [firstDayOfMonth, daysInMonth]);
+
+  // ==========================================
+  // PREVIOUS MONTH
+  // ==========================================
+
+  const handlePreviousMonth = () => {
+    setCurrentDate(
+      new Date(
+        currentYear,
+        currentMonth - 1,
+        1
+      )
+    );
+  };
+
+  // ==========================================
+  // NEXT MONTH
+  // ==========================================
+
+  const handleNextMonth = () => {
+    setCurrentDate(
+      new Date(
+        currentYear,
+        currentMonth + 1,
+        1
+      )
+    );
+  };
+
+  // ==========================================
+  // CHECK TODAY
+  // ==========================================
+
+  const today = new Date();
+
+  const isToday = (day) => {
+    if (!day) return false;
+
+    return (
+      day === today.getDate() &&
+      currentMonth === today.getMonth() &&
+      currentYear === today.getFullYear()
+    );
+  };
+
+  // ==========================================
+  // GET EVENTS FOR SPECIFIC DAY
+  // ==========================================
+
+  const getEventsForDay = (day) => {
+    if (!day) return [];
+
+    return events.filter((event) => {
+      if (!event.startDate) return false;
+
+      const eventDate = new Date(event.startDate);
+
+      return (
+        eventDate.getFullYear() === currentYear &&
+        eventDate.getMonth() === currentMonth &&
+        eventDate.getDate() === day
+      );
+    });
+  };
+
+  // ==========================================
+  // FORMAT EVENT TIME
+  // ==========================================
+
+  const formatTime = (time) => {
+    if (!time) return "";
+
+    const [hours, minutes] = time.split(":");
+
+    const date = new Date();
+
+    date.setHours(
+      Number(hours),
+      Number(minutes)
+    );
+
+    return date.toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950">
@@ -31,20 +178,40 @@ function Calendar() {
 
           <div className="flex items-center gap-2">
 
-            <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <button
+              type="button"
+              onClick={handlePreviousMonth}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              aria-label="Previous month"
+            >
               <ChevronLeft size={18} />
             </button>
 
-            <button className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              September 2026
+            <button
+              type="button"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            >
+              {monthName}
             </button>
 
-            <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <button
+              type="button"
+              onClick={handleNextMonth}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              aria-label="Next month"
+            >
               <ChevronRight size={18} />
             </button>
 
           </div>
         </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            {error}
+          </div>
+        )}
 
         {/* Calendar */}
         <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -71,46 +238,79 @@ function Calendar() {
 
           </div>
 
-          {/* Days */}
-          <div className="grid grid-cols-7">
+          {/* Loading */}
+          {loading ? (
+            <div className="flex min-h-96 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+              Loading events...
+            </div>
+          ) : (
+            /* Days */
+            <div className="grid grid-cols-7">
 
-            {days.map((day) => {
-              const hasEvent =
-                day === 20 ||
-                day === 22 ||
-                day === 25;
+              {calendarDays.map((day, index) => {
+                const dayEvents = getEventsForDay(day);
 
-              return (
-                <div
-                  key={day}
-                  className="min-h-28 border-b border-r border-slate-100 p-3 dark:border-slate-800"
-                >
-
-                  <span
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-sm ${
-                      day === 12
-                        ? "bg-indigo-600 font-semibold text-white"
-                        : "text-slate-700 dark:text-slate-300"
+                return (
+                  <div
+                    key={`${day}-${index}`}
+                    className={`min-h-28 border-b border-r border-slate-100 p-3 dark:border-slate-800 ${
+                      !day
+                        ? "bg-slate-50/50 dark:bg-slate-950/30"
+                        : ""
                     }`}
                   >
-                    {day}
-                  </span>
 
-                  {hasEvent && (
-                    <div className="mt-3 rounded-md bg-indigo-50 px-2 py-1.5 text-xs font-medium text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-                      {day === 20
-                        ? "Annual Function"
-                        : day === 22
-                          ? "JS Workshop"
-                          : "Tech Seminar"}
-                    </div>
-                  )}
+                    {day && (
+                      <>
+                        {/* Day Number */}
+                        <span
+                          className={`flex h-7 w-7 items-center justify-center rounded-full text-sm ${
+                            isToday(day)
+                              ? "bg-indigo-600 font-semibold text-white"
+                              : "text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          {day}
+                        </span>
 
-                </div>
-              );
-            })}
+                        {/* Events */}
+                        {dayEvents.length > 0 && (
+                          <div className="mt-3 space-y-1.5">
 
-          </div>
+                            {dayEvents.map((event) => (
+                              <Link
+                                key={event._id}
+                                to={`/events/${event._id}`}
+                                className="block rounded-md bg-indigo-50 px-2 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-400 dark:hover:bg-indigo-950"
+                                title={event.title}
+                              >
+                                <p className="truncate">
+                                  {event.title}
+                                </p>
+
+                                {event.startTime && (
+                                  <p className="mt-0.5 text-[10px] opacity-75">
+                                    {formatTime(
+                                      event.startTime
+                                    )}
+                                  </p>
+                                )}
+                              </Link>
+                            ))}
+
+                          </div>
+                        )}
+
+                      </>
+                    )}
+
+                  </div>
+                );
+              })}
+
+            </div>
+          )}
+
         </div>
 
       </div>

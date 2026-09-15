@@ -10,6 +10,7 @@ import AddEvent from "./pages/AddEvent";
 import EditEvent from "./pages/EditEvent";
 import EventDetails from "./pages/EventDetails";
 import Calendar from "./pages/Calendar";
+import HelpSupport from "./pages/HelpSupport";
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -85,6 +86,7 @@ function App() {
               element={<Calendar />}
             />
 
+            <Route path="/help-support" element={<HelpSupport />} />
             <Route
               path="*"
               element={<Navigate to="/dashboard" replace />}

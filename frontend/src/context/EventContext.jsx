@@ -1,103 +1,212 @@
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import axios from "axios";
 
 const EventContext = createContext();
 
-const initialEvents = [
-  {
-    id: 1,
-    title: "Annual College Function",
-    type: "College Event",
-    description:
-      "Annual college function for students and faculty members.",
-    startDate: "2026-09-20",
-    startTime: "10:00",
-    endDate: "2026-09-20",
-    endTime: "14:00",
-    venue: "Main Auditorium",
-    room: "",
-    address: "",
-    organizer: "Student Committee",
-    contactNumber: "",
-    email: "",
-    capacity: 500,
-    registrationRequired: true,
-    registrationDeadline: "",
-    status: "Scheduled",
-    notes: "",
-  },
-
-  {
-    id: 2,
-    title: "JavaScript Workshop",
-    type: "Workshop",
-    description: "Practical JavaScript workshop for students.",
-    startDate: "2026-09-22",
-    startTime: "10:00",
-    endDate: "2026-09-22",
-    endTime: "13:00",
-    venue: "Lab 1",
-    room: "",
-    address: "",
-    organizer: "IT Department",
-    contactNumber: "",
-    email: "",
-    capacity: 100,
-    registrationRequired: true,
-    registrationDeadline: "",
-    status: "Pending",
-    notes: "",
-  },
-];
+const API_URL = "http://localhost:5000/api/events";
 
 export function EventProvider({ children }) {
-  const [events, setEvents] = useState(initialEvents);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Add Event
-  const addEvent = (eventData) => {
-    const newEvent = {
-      ...eventData,
-      id: Date.now(),
-    };
+  // ================= FETCH ALL EVENTS =================
 
-    setEvents((currentEvents) => [
-      ...currentEvents,
-      newEvent,
-    ]);
+  const fetchEvents = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    return newEvent;
-  };
+      const response = await axios.get(API_URL);
 
-  // Update Event
-  const updateEvent = (id, updatedData) => {
-    setEvents((currentEvents) =>
-      currentEvents.map((event) =>
-        event.id === id
-          ? { ...event, ...updatedData }
-          : event
-      )
-    );
-  };
+      setEvents(response.data.data || []);
+    } catch (error) {
+      console.error(
+        "Failed to fetch events:",
+        error
+      );
 
-  // Delete Event
-  const deleteEvent = (id) => {
-    setEvents((currentEvents) =>
-      currentEvents.filter((event) => event.id !== id)
-    );
-  };
+      setError(
+        error.response?.data?.message ||
+          "Failed to fetch events"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch events when application starts
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // ================= ADD EVENT =================
+
+  const addEvent = useCallback(async (eventData) => {
+    try {
+      setError(null);
+
+      const response = await axios.post(
+        API_URL,
+        eventData
+      );
+
+      const newEvent = response.data.data;
+
+      setEvents((currentEvents) => [
+        ...currentEvents,
+        newEvent,
+      ]);
+
+      return newEvent;
+    } catch (error) {
+      console.error(
+        "Failed to create event:",
+        error
+      );
+
+      setError(
+        error.response?.data?.message ||
+          "Failed to create event"
+      );
+
+      throw error;
+    }
+  }, []);
+
+  // ================= GET EVENT BY ID =================
+
+  const getEventById = useCallback(async (id) => {
+    try {
+      setError(null);
+
+      const response = await axios.get(
+        `${API_URL}/${id}`
+      );
+
+      return response.data.data;
+    } catch (error) {
+      console.error(
+        "Failed to fetch event:",
+        error
+      );
+
+      setError(
+        error.response?.data?.message ||
+          "Failed to fetch event"
+      );
+
+      throw error;
+    }
+  }, []);
+
+  // ================= UPDATE EVENT =================
+
+  const updateEvent = useCallback(
+    async (id, updatedData) => {
+      try {
+        setError(null);
+
+        const response = await axios.put(
+          `${API_URL}/${id}`,
+          updatedData
+        );
+
+        const updatedEvent =
+          response.data.data;
+
+        // Update event inside local state
+        setEvents((currentEvents) =>
+          currentEvents.map((event) =>
+            String(event._id) === String(id)
+              ? updatedEvent
+              : event
+          )
+        );
+
+        return updatedEvent;
+      } catch (error) {
+        console.error(
+          "Failed to update event:",
+          error
+        );
+
+        setError(
+          error.response?.data?.message ||
+            "Failed to update event"
+        );
+
+        throw error;
+      }
+    },
+    []
+  );
+
+  // ================= DELETE EVENT =================
+
+  const deleteEvent = useCallback(async (id) => {
+    try {
+      setError(null);
+
+      await axios.delete(
+        `${API_URL}/${id}`
+      );
+
+      setEvents((currentEvents) =>
+        currentEvents.filter(
+          (event) =>
+            String(event._id) !== String(id)
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Failed to delete event:",
+        error
+      );
+
+      setError(
+        error.response?.data?.message ||
+          "Failed to delete event"
+      );
+
+      throw error;
+    }
+  }, []);
+
+  // ================= REFRESH EVENTS =================
+
+  const refreshEvents = useCallback(async () => {
+    await fetchEvents();
+  }, [fetchEvents]);
+
+  // ================= PROVIDER =================
 
   return (
     <EventContext.Provider
       value={{
         events,
+        loading,
+        error,
         addEvent,
+        getEventById,
         updateEvent,
         deleteEvent,
+        refreshEvents,
       }}
     >
       {children}
     </EventContext.Provider>
   );
 }
+
+// ================= CUSTOM HOOK =================
 
 export function useEvents() {
   const context = useContext(EventContext);
