@@ -340,4 +340,4 @@ function ForgotPassword() {
   );
 }
 
-export default ForgotPassword;
+export default ForgotPassword;r
