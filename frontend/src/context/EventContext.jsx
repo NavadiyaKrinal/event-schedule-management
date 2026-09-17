@@ -7,24 +7,58 @@ import {
 } from "react";
 
 import axios from "axios";
+import { useAuth } from "./AuthContext";
 
 const EventContext = createContext();
 
 const API_URL = "http://localhost:5000/api/events";
 
 export function EventProvider({ children }) {
+  const {
+    token,
+    loading: authLoading,
+  } = useAuth();
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ================= FETCH ALL EVENTS =================
+
+  const getAuthConfig = useCallback(() => {
+    const savedToken =
+      token || localStorage.getItem("token");
+
+    return savedToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${savedToken}`,
+          },
+        }
+      : {};
+  }, [token]);
+
 
   const fetchEvents = useCallback(async () => {
+    // Wait until authentication check is completed
+    if (authLoading) {
+      return;
+    }
+
+    // No logged-in user
+    if (!token) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(API_URL);
+      const response = await axios.get(
+        API_URL,
+        getAuthConfig()
+      );
 
       setEvents(response.data.data || []);
     } catch (error) {
@@ -40,74 +74,78 @@ export function EventProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, authLoading, getAuthConfig]);
 
-  // Fetch events when application starts
+  // Fetch events after authentication
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
 
-  // ================= ADD EVENT =================
+  const addEvent = useCallback(
+    async (eventData) => {
+      try {
+        setError(null);
 
-  const addEvent = useCallback(async (eventData) => {
-    try {
-      setError(null);
+        const response = await axios.post(
+          API_URL,
+          eventData,
+          getAuthConfig()
+        );
 
-      const response = await axios.post(
-        API_URL,
-        eventData
-      );
+        const newEvent = response.data.data;
 
-      const newEvent = response.data.data;
+        setEvents((currentEvents) => [
+          ...currentEvents,
+          newEvent,
+        ]);
 
-      setEvents((currentEvents) => [
-        ...currentEvents,
-        newEvent,
-      ]);
+        return newEvent;
+      } catch (error) {
+        console.error(
+          "Failed to create event:",
+          error
+        );
 
-      return newEvent;
-    } catch (error) {
-      console.error(
-        "Failed to create event:",
-        error
-      );
+        setError(
+          error.response?.data?.message ||
+            "Failed to create event"
+        );
 
-      setError(
-        error.response?.data?.message ||
-          "Failed to create event"
-      );
+        throw error;
+      }
+    },
+    [getAuthConfig]
+  );
 
-      throw error;
-    }
-  }, []);
 
-  // ================= GET EVENT BY ID =================
+  const getEventById = useCallback(
+    async (id) => {
+      try {
+        setError(null);
 
-  const getEventById = useCallback(async (id) => {
-    try {
-      setError(null);
+        const response = await axios.get(
+          `${API_URL}/${id}`,
+          getAuthConfig()
+        );
 
-      const response = await axios.get(
-        `${API_URL}/${id}`
-      );
+        return response.data.data;
+      } catch (error) {
+        console.error(
+          "Failed to fetch event:",
+          error
+        );
 
-      return response.data.data;
-    } catch (error) {
-      console.error(
-        "Failed to fetch event:",
-        error
-      );
+        setError(
+          error.response?.data?.message ||
+            "Failed to fetch event"
+        );
 
-      setError(
-        error.response?.data?.message ||
-          "Failed to fetch event"
-      );
+        throw error;
+      }
+    },
+    [getAuthConfig]
+  );
 
-      throw error;
-    }
-  }, []);
-
-  // ================= UPDATE EVENT =================
 
   const updateEvent = useCallback(
     async (id, updatedData) => {
@@ -116,7 +154,8 @@ export function EventProvider({ children }) {
 
         const response = await axios.put(
           `${API_URL}/${id}`,
-          updatedData
+          updatedData,
+          getAuthConfig()
         );
 
         const updatedEvent =
@@ -146,47 +185,48 @@ export function EventProvider({ children }) {
         throw error;
       }
     },
-    []
+    [getAuthConfig]
   );
 
-  // ================= DELETE EVENT =================
 
-  const deleteEvent = useCallback(async (id) => {
-    try {
-      setError(null);
+  const deleteEvent = useCallback(
+    async (id) => {
+      try {
+        setError(null);
 
-      await axios.delete(
-        `${API_URL}/${id}`
-      );
+        await axios.delete(
+          `${API_URL}/${id}`,
+          getAuthConfig()
+        );
 
-      setEvents((currentEvents) =>
-        currentEvents.filter(
-          (event) =>
-            String(event._id) !== String(id)
-        )
-      );
-    } catch (error) {
-      console.error(
-        "Failed to delete event:",
-        error
-      );
+        setEvents((currentEvents) =>
+          currentEvents.filter(
+            (event) =>
+              String(event._id) !== String(id)
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Failed to delete event:",
+          error
+        );
 
-      setError(
-        error.response?.data?.message ||
-          "Failed to delete event"
-      );
+        setError(
+          error.response?.data?.message ||
+            "Failed to delete event"
+        );
 
-      throw error;
-    }
-  }, []);
+        throw error;
+      }
+    },
+    [getAuthConfig]
+  );
 
-  // ================= REFRESH EVENTS =================
 
   const refreshEvents = useCallback(async () => {
     await fetchEvents();
   }, [fetchEvents]);
 
-  // ================= PROVIDER =================
 
   return (
     <EventContext.Provider
@@ -205,8 +245,6 @@ export function EventProvider({ children }) {
     </EventContext.Provider>
   );
 }
-
-// ================= CUSTOM HOOK =================
 
 export function useEvents() {
   const context = useContext(EventContext);

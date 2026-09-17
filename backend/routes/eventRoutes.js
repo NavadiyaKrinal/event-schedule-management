@@ -8,21 +8,43 @@ const {
   deleteEvent,
 } = require("../controllers/eventController");
 
+const { protect } = require("../middleware/authMiddleware");
+const { authorize } = require("../middleware/roleMiddleware");
+
 const router = express.Router();
 
-// Create a new event
-router.post("/", createEvent);
+router.get(
+  "/",
+  protect,
+  getEvents
+);
 
-// Get all events
-router.get("/", getEvents);
+router.get(
+  "/:id",
+  protect,
+  getEventById
+);
 
-// Get a single event
-router.get("/:id", getEventById);
 
-// Update an event
-router.put("/:id", updateEvent);
+router.post(
+  "/",
+  protect,
+  authorize("Admin", "Event Organizer"),
+  createEvent
+);
 
-// Delete an event
-router.delete("/:id", deleteEvent);
+router.put(
+  "/:id",
+  protect,
+  authorize("Admin", "Event Organizer"),
+  updateEvent
+);
+
+router.delete(
+  "/:id",
+  protect,
+  authorize("Admin"),
+  deleteEvent
+);
 
 module.exports = router;

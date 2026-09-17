@@ -12,7 +12,11 @@ import {
   User,
 } from "lucide-react";
 
+import { useAuth } from "../context/AuthContext";
+
 function Navbar() {
+  const { user, logout } = useAuth();
+
   const [darkMode, setDarkMode] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -58,52 +62,60 @@ function Navbar() {
     setProfileOpen(false);
   };
 
+  // =========================================================
+  // LOGOUT
+  // =========================================================
+
+  const handleLogout = () => {
+    closeProfile();
+    logout();
+  };
+
+  // =========================================================
+  // USER INFORMATION
+  // =========================================================
+
+  const userName = user?.name || "User";
+  const userEmail = user?.email || "";
+  const userRole = user?.role || "User";
+
+  const userInitial = userName
+    .charAt(0)
+    .toUpperCase();
+
   return (
     <header
       className="
         relative
         z-40
-
         flex
         h-16
         shrink-0
         items-center
         justify-between
-
         border-b
         border-slate-200
-
         bg-white
-
         px-4
-
         shadow-sm
-
         transition-colors
         duration-300
-
         dark:border-slate-800
         dark:bg-slate-900
-
         md:px-6
       "
     >
-
       {/* =====================================================
           LEFT SIDE
       ====================================================== */}
 
       <div className="flex min-w-0 flex-1 items-center">
-
-        {/* Page Information */}
         <div className="hidden md:block">
-
           <p
             className="
               text-sm
               font-semibold
               text-slate-600
-
               dark:text-slate-300
             "
           >
@@ -114,13 +126,11 @@ function Navbar() {
             className="
               text-xs
               text-slate-400
-
               dark:text-slate-500
             "
           >
             Manage your events efficiently
           </p>
-
         </div>
       </div>
 
@@ -130,23 +140,17 @@ function Navbar() {
 
       <div className="flex items-center gap-1.5 sm:gap-2">
 
-        {/* =================================================
-            SEARCH
-        ================================================== */}
+        {/* SEARCH */}
 
         <div className="relative hidden lg:block">
-
           <Search
             size={17}
             className="
               pointer-events-none
-
               absolute
               left-3
               top-1/2
-
               -translate-y-1/2
-
               text-slate-400
             "
           />
@@ -157,49 +161,32 @@ function Navbar() {
             className="
               h-9
               w-56
-
               rounded-lg
-
               border
               border-slate-200
-
               bg-slate-50
-
               pl-9
               pr-3
-
               text-sm
               text-slate-700
-
               outline-none
-
               transition-all
               duration-200
-
               placeholder:text-slate-400
-
               focus:border-indigo-500
-
               focus:ring-2
               focus:ring-indigo-100
-
               dark:border-slate-700
               dark:bg-slate-800
               dark:text-white
-
               dark:placeholder:text-slate-500
-
               dark:focus:border-indigo-500
-
               dark:focus:ring-indigo-950
             "
           />
-
         </div>
 
-        {/* =================================================
-            HELP
-        ================================================== */}
+        {/* HELP */}
 
         <button
           type="button"
@@ -210,20 +197,14 @@ function Navbar() {
             h-9
             w-9
             shrink-0
-
             items-center
             justify-center
-
             rounded-lg
-
             text-slate-500
-
             transition-all
             duration-200
-
             hover:bg-slate-100
             hover:text-slate-900
-
             dark:text-slate-400
             dark:hover:bg-slate-800
             dark:hover:text-white
@@ -232,9 +213,7 @@ function Navbar() {
           <HelpCircle size={19} />
         </button>
 
-        {/* =================================================
-            NOTIFICATIONS
-        ================================================== */}
+        {/* NOTIFICATIONS */}
 
         <button
           type="button"
@@ -242,25 +221,18 @@ function Navbar() {
           aria-label="Notifications"
           className="
             relative
-
             flex
             h-9
             w-9
             shrink-0
-
             items-center
             justify-center
-
             rounded-lg
-
             text-slate-500
-
             transition-all
             duration-200
-
             hover:bg-slate-100
             hover:text-slate-900
-
             dark:text-slate-400
             dark:hover:bg-slate-800
             dark:hover:text-white
@@ -268,32 +240,23 @@ function Navbar() {
         >
           <Bell size={19} />
 
-          {/* Notification Dot */}
           <span
             className="
               absolute
-
               right-1.5
               top-1.5
-
               h-2
               w-2
-
               rounded-full
-
               bg-red-500
-
               ring-2
               ring-white
-
               dark:ring-slate-900
             "
           />
         </button>
 
-        {/* =================================================
-            THEME TOGGLE
-        ================================================== */}
+        {/* THEME TOGGLE */}
 
         <button
           type="button"
@@ -313,38 +276,27 @@ function Navbar() {
             h-9
             w-9
             shrink-0
-
             items-center
             justify-center
-
             rounded-lg
-
             text-slate-500
-
             transition-all
             duration-200
-
             hover:bg-slate-100
             hover:text-slate-900
-
             dark:text-slate-400
             dark:hover:bg-slate-800
             dark:hover:text-white
           "
         >
-
           <div className="relative h-5 w-5">
-
-            {/* Sun */}
             <Sun
               size={19}
               className={`
                 absolute
                 inset-0
-
                 transition-all
                 duration-300
-
                 ${
                   darkMode
                     ? "rotate-0 scale-100 opacity-100"
@@ -353,16 +305,13 @@ function Navbar() {
               `}
             />
 
-            {/* Moon */}
             <Moon
               size={19}
               className={`
                 absolute
                 inset-0
-
                 transition-all
                 duration-300
-
                 ${
                   darkMode
                     ? "rotate-90 scale-0 opacity-0"
@@ -370,18 +319,17 @@ function Navbar() {
                 }
               `}
             />
-
           </div>
-
         </button>
 
         {/* =================================================
-            ADMIN PROFILE
+            USER PROFILE
         ================================================== */}
 
         <div className="relative ml-1">
 
           {/* Profile Button */}
+
           <button
             type="button"
             onClick={() =>
@@ -395,84 +343,69 @@ function Navbar() {
               flex
               items-center
               gap-2
-
               rounded-lg
-
               px-2
               py-1.5
-
               transition-all
               duration-200
-
               hover:bg-slate-100
-
               dark:hover:bg-slate-800
             "
           >
 
             {/* Avatar */}
+
             <div
               className="
                 flex
                 h-8
                 w-8
                 shrink-0
-
                 items-center
                 justify-center
-
                 rounded-full
-
                 bg-indigo-600
-
                 text-xs
                 font-bold
-
                 text-white
               "
             >
-              A
+              {userInitial}
             </div>
 
-            {/* Admin Details */}
-            <div className="hidden text-left sm:block">
+            {/* User Details */}
 
+            <div className="hidden text-left sm:block">
               <p
                 className="
                   text-sm
                   font-semibold
-
                   text-slate-800
-
                   dark:text-white
                 "
               >
-                Admin
+                {userName}
               </p>
 
               <p
                 className="
                   text-xs
-
                   text-slate-400
-
                   dark:text-slate-500
                 "
               >
-                Administrator
+                {userRole}
               </p>
-
             </div>
 
             {/* Arrow */}
+
             <ChevronDown
               size={16}
               className={`
                 text-slate-400
-
                 transition-transform
                 duration-200
-
                 ${
                   profileOpen
                     ? "rotate-180"
@@ -480,16 +413,14 @@ function Navbar() {
                 }
               `}
             />
-
           </button>
 
-          {/* =================================================
-              PROFILE DROPDOWN
-          ================================================== */}
+          {/* PROFILE DROPDOWN */}
 
           {profileOpen && (
             <>
               {/* Outside Click */}
+
               <button
                 type="button"
                 aria-label="Close profile menu"
@@ -503,119 +434,88 @@ function Navbar() {
               />
 
               {/* Dropdown */}
+
               <div
                 role="menu"
                 className="
                   absolute
-
                   right-0
                   top-12
                   z-50
-
                   w-56
-
                   overflow-hidden
-
                   rounded-xl
-
                   border
                   border-slate-200
-
                   bg-white
-
                   shadow-xl
-
                   dark:border-slate-700
                   dark:bg-slate-900
                 "
               >
 
-                {/* =========================================
-                    PROFILE HEADER
-                ========================================== */}
+                {/* PROFILE HEADER */}
 
                 <div
                   className="
                     border-b
                     border-slate-200
-
                     p-4
-
                     dark:border-slate-800
                   "
                 >
-
                   <div className="flex items-center gap-3">
 
-                    {/* Avatar */}
                     <div
                       className="
                         flex
                         h-10
                         w-10
                         shrink-0
-
                         items-center
                         justify-center
-
                         rounded-full
-
                         bg-indigo-600
-
                         text-sm
                         font-bold
-
                         text-white
                       "
                     >
-                      A
+                      {userInitial}
                     </div>
 
-                    {/* User Details */}
                     <div className="min-w-0">
-
                       <p
                         className="
                           truncate
-
                           text-sm
                           font-semibold
-
                           text-slate-900
-
                           dark:text-white
                         "
                       >
-                        Admin
+                        {userName}
                       </p>
 
                       <p
                         className="
                           truncate
-
                           text-xs
-
                           text-slate-500
-
                           dark:text-slate-400
                         "
                       >
-                        admin@example.com
+                        {userEmail}
                       </p>
-
                     </div>
 
                   </div>
-
                 </div>
 
-                {/* =========================================
-                    PROFILE OPTIONS
-                ========================================== */}
+                {/* PROFILE OPTIONS */}
 
                 <div className="p-2">
 
-                  {/* My Profile */}
                   <button
                     type="button"
                     role="menuitem"
@@ -623,25 +523,17 @@ function Navbar() {
                     className="
                       flex
                       w-full
-
                       items-center
                       gap-3
-
                       rounded-lg
-
                       px-3
                       py-2.5
-
                       text-sm
-
                       text-slate-600
-
                       transition-all
                       duration-200
-
                       hover:bg-slate-100
                       hover:text-slate-900
-
                       dark:text-slate-300
                       dark:hover:bg-slate-800
                       dark:hover:text-white
@@ -649,12 +541,9 @@ function Navbar() {
                   >
                     <User size={17} />
 
-                    <span>
-                      My Profile
-                    </span>
+                    <span>My Profile</span>
                   </button>
 
-                  {/* Settings */}
                   <button
                     type="button"
                     role="menuitem"
@@ -662,25 +551,17 @@ function Navbar() {
                     className="
                       flex
                       w-full
-
                       items-center
                       gap-3
-
                       rounded-lg
-
                       px-3
                       py-2.5
-
                       text-sm
-
                       text-slate-600
-
                       transition-all
                       duration-200
-
                       hover:bg-slate-100
                       hover:text-slate-900
-
                       dark:text-slate-300
                       dark:hover:bg-slate-800
                       dark:hover:text-white
@@ -688,68 +569,51 @@ function Navbar() {
                   >
                     <Settings size={17} />
 
-                    <span>
-                      Settings
-                    </span>
+                    <span>Settings</span>
                   </button>
 
                 </div>
 
-                {/* =========================================
-                    LOGOUT
-                ========================================== */}
+                {/* LOGOUT */}
 
                 <div
                   className="
                     border-t
                     border-slate-200
-
                     p-2
-
                     dark:border-slate-800
                   "
                 >
-
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={closeProfile}
+                    onClick={handleLogout}
                     className="
                       flex
                       w-full
-
                       items-center
                       gap-3
-
                       rounded-lg
-
                       px-3
                       py-2.5
-
                       text-sm
-
                       text-red-500
-
                       transition-all
                       duration-200
-
                       hover:bg-red-50
-
                       dark:hover:bg-red-950/30
                     "
                   >
                     <LogOut size={17} />
 
-                    <span>
-                      Logout
-                    </span>
+                    <span>Logout</span>
                   </button>
-
                 </div>
 
               </div>
             </>
           )}
+
         </div>
       </div>
     </header>

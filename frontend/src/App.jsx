@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { useState } from "react";
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
@@ -12,48 +18,56 @@ import EventDetails from "./pages/EventDetails";
 import Calendar from "./pages/Calendar";
 import HelpSupport from "./pages/HelpSupport";
 
-function App() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
-  // Automatically collapse on smaller screens
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setSidebarCollapsed(true);
-      }
-    };
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
-    handleResize();
 
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
+function AppLayout() {
+  const [sidebarCollapsed, setSidebarCollapsed] =
+    useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Sidebar */}
+
       <Sidebar
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
       />
 
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      {/* Main Content */}
 
+      <div
+        className={`
+          min-h-screen
+          transition-all
+          duration-300
+          ease-in-out
+          ${sidebarCollapsed
+            ? "ml-[88px]"
+            : "ml-64"
+          }
+        `}
+      >
         {/* Navbar */}
+
         <Navbar />
 
-        {/* Content */}
-        <main className="min-h-0 flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-          <Routes>
+        {/* Page Content */}
 
+        <main className="p-6">
+          <Routes>
             <Route
               path="/"
-              element={<Navigate to="/dashboard" replace />}
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
             />
 
             <Route
@@ -72,13 +86,13 @@ function App() {
             />
 
             <Route
-              path="/events/:id"
-              element={<EventDetails />}
+              path="/events/edit/:id"
+              element={<EditEvent />}
             />
 
             <Route
-              path="/events/edit/:id"
-              element={<EditEvent />}
+              path="/events/:id"
+              element={<EventDetails />}
             />
 
             <Route
@@ -86,17 +100,76 @@ function App() {
               element={<Calendar />}
             />
 
-            <Route path="/help-support" element={<HelpSupport />} />
             <Route
-              path="*"
-              element={<Navigate to="/dashboard" replace />}
+              path="/help-support"
+              element={<HelpSupport />}
             />
 
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
+            />
           </Routes>
         </main>
-
       </div>
     </div>
+  );
+}
+
+
+function App() {
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
+
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        }
+      />
+
+      <Route
+        path="/reset-password/:token"
+        element={
+          <PublicRoute>
+            <ResetPassword />
+          </PublicRoute>
+        }
+      />
+
+      <Route
+        path="*"
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 

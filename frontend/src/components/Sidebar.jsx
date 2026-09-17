@@ -9,10 +9,21 @@ import {
 
 import { NavLink } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext";
+
 function Sidebar({
   collapsed,
   setCollapsed,
 }) {
+  const { user } = useAuth();
+
+  const userName = user?.name || "User";
+  const userRole = user?.role || "User";
+
+  const userInitial = userName
+    .charAt(0)
+    .toUpperCase();
+
   const navItems = [
     {
       name: "Dashboard",
@@ -40,6 +51,10 @@ function Sidebar({
   return (
     <aside
       className={`
+        fixed
+        left-0
+        top-0
+        z-30
         flex
         h-screen
         shrink-0
@@ -57,13 +72,13 @@ function Sidebar({
         dark:border-slate-800
         dark:bg-slate-900
 
-        ${collapsed
-          ? "w-[88px]"
-          : "w-64"
+        ${
+          collapsed
+            ? "w-[88px]"
+            : "w-64"
         }
       `}
     >
-
       {/* =====================================================
           SIDEBAR HEADER
       ====================================================== */}
@@ -79,27 +94,28 @@ function Sidebar({
           border-slate-200
           dark:border-slate-800
 
-          ${collapsed
-            ? "justify-center px-2"
-            : "justify-between px-5"
+          ${
+            collapsed
+              ? "justify-center px-2"
+              : "justify-between px-5"
           }
         `}
       >
-
         {/* Logo */}
+
         <div
           className={`
             flex
             min-w-0
             items-center
 
-            ${collapsed
-              ? "hidden"
-              : "gap-3"
+            ${
+              collapsed
+                ? "hidden"
+                : "gap-3"
             }
           `}
         >
-
           <div
             className="
               flex
@@ -108,9 +124,7 @@ function Sidebar({
               shrink-0
               items-center
               justify-center
-
               rounded-lg
-
               bg-indigo-600
               text-white
             "
@@ -130,12 +144,16 @@ function Sidebar({
           >
             EventFlow
           </span>
-
         </div>
+
+        {/* Collapse Button */}
+
         <button
           type="button"
           onClick={() =>
-            setCollapsed((previous) => !previous)
+            setCollapsed(
+              (previous) => !previous
+            )
           }
           title={
             collapsed
@@ -154,24 +172,20 @@ function Sidebar({
             shrink-0
             items-center
             justify-center
-
             rounded-lg
-
             text-slate-500
-
             transition-all
             duration-200
-
             hover:bg-slate-100
             hover:text-slate-900
-
             dark:text-slate-400
             dark:hover:bg-slate-800
             dark:hover:text-white
 
-            ${collapsed
-              ? "mx-auto"
-              : ""
+            ${
+              collapsed
+                ? "mx-auto"
+                : ""
             }
           `}
         >
@@ -187,7 +201,6 @@ function Sidebar({
             />
           )}
         </button>
-
       </div>
 
       {/* =====================================================
@@ -200,34 +213,33 @@ function Sidebar({
           overflow-y-auto
           py-7
 
-          ${collapsed
-            ? "px-2"
-            : "px-4"
+          ${
+            collapsed
+              ? "px-2"
+              : "px-4"
           }
         `}
       >
+        {/* Main Heading */}
 
-        {/* MAIN */}
         <p
           className={`
             mb-4
             overflow-hidden
             whitespace-nowrap
-
             text-xs
             font-semibold
             uppercase
             tracking-wider
-
             text-slate-400
             dark:text-slate-500
-
             transition-all
             duration-200
 
-            ${collapsed
-              ? "h-0 opacity-0"
-              : "h-auto px-4 opacity-100"
+            ${
+              collapsed
+                ? "h-0 opacity-0"
+                : "h-auto px-4 opacity-100"
             }
           `}
         >
@@ -235,8 +247,8 @@ function Sidebar({
         </p>
 
         {/* Menu */}
-        <div className="space-y-1">
 
+        <div className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -256,37 +268,34 @@ function Sidebar({
                     h-12
                     items-center
                     rounded-xl
-
                     text-sm
                     font-medium
-
                     transition-all
                     duration-200
 
-                    ${collapsed
-                    ? "justify-center px-2"
-                    : "gap-4 px-4"
-                  }
+                    ${
+                      collapsed
+                        ? "justify-center px-2"
+                        : "gap-4 px-4"
+                    }
 
-                    ${isActive
-                    ? `
+                    ${
+                      isActive
+                        ? `
                           bg-indigo-50
                           text-indigo-600
-
                           dark:bg-indigo-950/40
                           dark:text-indigo-400
                         `
-                    : `
+                        : `
                           text-slate-600
-
                           hover:bg-slate-100
                           hover:text-slate-900
-
                           dark:text-slate-300
                           dark:hover:bg-slate-800
                           dark:hover:text-white
                         `
-                  }
+                    }
                   `
                 }
               >
@@ -306,13 +315,13 @@ function Sidebar({
                       className={`
                         overflow-hidden
                         whitespace-nowrap
-
                         transition-all
                         duration-200
 
-                        ${collapsed
-                          ? "w-0 opacity-0"
-                          : "w-auto opacity-100"
+                        ${
+                          collapsed
+                            ? "w-0 opacity-0"
+                            : "w-auto opacity-100"
                         }
                       `}
                     >
@@ -323,7 +332,6 @@ function Sidebar({
               </NavLink>
             );
           })}
-
         </div>
       </nav>
 
@@ -334,19 +342,19 @@ function Sidebar({
       <div
         className={`
           shrink-0
-
           border-t
           border-slate-200
           dark:border-slate-800
 
-          ${collapsed
-            ? "p-2"
-            : "p-4"
+          ${
+            collapsed
+              ? "p-2"
+              : "p-4"
           }
         `}
       >
-
         {/* Help */}
+
         <NavLink
           to="/help-support"
           title={
@@ -361,37 +369,34 @@ function Sidebar({
               w-full
               items-center
               rounded-xl
-
               text-sm
               font-medium
-
               transition-all
               duration-200
 
-              ${collapsed
-              ? "justify-center"
-              : "gap-3 px-4"
-            }
+              ${
+                collapsed
+                  ? "justify-center"
+                  : "gap-3 px-4"
+              }
 
-              ${isActive
-              ? `
+              ${
+                isActive
+                  ? `
                     bg-indigo-50
                     text-indigo-600
-
                     dark:bg-indigo-950/40
                     dark:text-indigo-400
                   `
-              : `
+                  : `
                     text-slate-500
-
                     hover:bg-slate-100
                     hover:text-slate-900
-
                     dark:text-slate-400
                     dark:hover:bg-slate-800
                     dark:hover:text-white
                   `
-            }
+              }
             `
           }
         >
@@ -411,13 +416,13 @@ function Sidebar({
                 className={`
                   overflow-hidden
                   whitespace-nowrap
-
                   transition-all
                   duration-200
 
-                  ${collapsed
-                    ? "w-0 opacity-0"
-                    : "w-auto opacity-100"
+                  ${
+                    collapsed
+                      ? "w-0 opacity-0"
+                      : "w-auto opacity-100"
                   }
                 `}
               >
@@ -427,32 +432,32 @@ function Sidebar({
           )}
         </NavLink>
 
-        {/* Admin */}
+        {/* User */}
+
         <div
           title={
             collapsed
-              ? "Admin"
+              ? userName
               : undefined
           }
           className={`
             mt-3
             flex
             rounded-xl
-
             bg-slate-100
             dark:bg-slate-800/70
-
             transition-all
             duration-200
 
-            ${collapsed
-              ? "justify-center p-2"
-              : "items-center gap-3 p-3"
+            ${
+              collapsed
+                ? "justify-center p-2"
+                : "items-center gap-3 p-3"
             }
           `}
         >
-
           {/* Avatar */}
+
           <div
             className="
               flex
@@ -461,46 +466,42 @@ function Sidebar({
               shrink-0
               items-center
               justify-center
-
               rounded-full
-
               bg-indigo-600
-
               text-sm
               font-semibold
               text-white
             "
           >
-            A
+            {userInitial}
           </div>
 
-          {/* Admin Info */}
+          {/* User Info */}
+
           <div
             className={`
               min-w-0
               overflow-hidden
-
               transition-all
               duration-200
 
-              ${collapsed
-                ? "w-0 opacity-0"
-                : "w-auto opacity-100"
+              ${
+                collapsed
+                  ? "w-0 opacity-0"
+                  : "w-auto opacity-100"
               }
             `}
           >
             <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-              Admin
+              {userName}
             </p>
 
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-              Administrator
+              {userRole}
             </p>
           </div>
-
         </div>
       </div>
-
     </aside>
   );
 }

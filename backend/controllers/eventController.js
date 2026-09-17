@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 
 const createEvent = async (req, res) => {
   try {
-    const event = await Event.create(req.body);
+    const event = await Event.create({ ...req.body,
+      createdBy:req.user._id,
+     });
 
     res.status(201).json({
       success: true,
@@ -12,11 +14,23 @@ const createEvent = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Event Error:", error.message);
+  if (error.name === "ValidationError") {
+      const errors = {};
 
-    res.status(400).json({
+      Object.keys(error.errors).forEach((field) => {
+        errors[field] = error.errors[field].message;
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "Event validation failed",
+        errors,
+      });
+    }
+
+    res.status(500).json({
       success: false,
-      message: "Failed to create event",
-      error: error.message,
+      message: "Internal server error",
     });
   }
 };
@@ -83,7 +97,7 @@ const updateEvent = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check MongoDB ObjectId
+    // Validate MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -91,14 +105,7 @@ const updateEvent = async (req, res) => {
       });
     }
 
-    const event = await Event.findByIdAndUpdate(
-      id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const event = await Event.findById(id);
 
     if (!event) {
       return res.status(404).json({
@@ -107,14 +114,36 @@ const updateEvent = async (req, res) => {
       });
     }
 
+    // Admin can update any event
+    // Event Organizer can update only their own event
+    if (
+      req.user.role !== "Admin" &&
+      String(event.createdBy) !== String(req.user._id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own events.",
+      });
+    }
+
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
     res.status(200).json({
       success: true,
       message: "Event updated successfully",
-      data: event,
+      data: updatedEvent,
     });
   } catch (error) {
     console.error("Update Event Error:", error);
 
+    // Mongoose validation error
     if (error.name === "ValidationError") {
       const errors = {};
 
@@ -124,17 +153,18 @@ const updateEvent = async (req, res) => {
 
       return res.status(400).json({
         success: false,
-        message: "Validation failed",
+        message: "Event validation failed",
         errors,
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to update event",
+      message: "Internal server error",
     });
   }
 };
+
 const deleteEvent = async (req, res) => {
   try {
     const { id } = req.params;

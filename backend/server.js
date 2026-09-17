@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
+const authRoutes = require("./routes/authRoutes");
 const connectDB = require("./config/db");
 const eventRoutes = require("./routes/eventRoutes");
 
@@ -22,7 +23,7 @@ app.use(
 );
 
 app.use("/api/events", eventRoutes);
-
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
     res.json({

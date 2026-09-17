@@ -4,89 +4,91 @@ const eventSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: true,
+      required: [true, "Event title is required"],
       trim: true,
     },
 
     type: {
       type: String,
-      required: true,
+      required: [true, "Event type is required"],
       trim: true,
     },
 
     description: {
       type: String,
-      trim: true,
       default: "",
     },
 
     status: {
       type: String,
-      enum: ["Upcoming", "Ongoing", "Completed", "Cancelled"],
+      enum: [
+        "Upcoming",
+        "Ongoing",
+        "Completed",
+        "Cancelled",
+      ],
       default: "Upcoming",
     },
 
     startDate: {
       type: Date,
-      required: true,
+      required: [true, "Start date is required"],
     },
 
     startTime: {
       type: String,
-      required: true,
+      required: [true, "Start time is required"],
     },
 
     endDate: {
       type: Date,
-      required: true,
+      required: [true, "End date is required"],
     },
 
     endTime: {
       type: String,
-      required: true,
+      required: [true, "End time is required"],
     },
 
     venue: {
       type: String,
-      required: true,
+      required: [true, "Venue is required"],
       trim: true,
     },
 
     room: {
       type: String,
-      trim: true,
       default: "",
     },
 
     address: {
       type: String,
-      trim: true,
       default: "",
     },
 
     organizer: {
       type: String,
-      required: true,
+      required: [true, "Organizer is required"],
       trim: true,
     },
 
     contactNumber: {
       type: String,
-      required: true,
+      required: [true, "Contact number is required"],
       trim: true,
     },
 
     email: {
       type: String,
-      required: true,
-      trim: true,
+      required: [true, "Email is required"],
       lowercase: true,
+      trim: true,
     },
 
     capacity: {
       type: Number,
-      required: true,
-      min: 1,
+      required: [true, "Capacity is required"],
+      min: [1, "Capacity must be at least 1"],
     },
 
     registrationRequired: {
@@ -101,8 +103,14 @@ const eventSchema = new mongoose.Schema(
 
     notes: {
       type: String,
-      trim: true,
       default: "",
+    },
+
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   {
@@ -110,6 +118,4 @@ const eventSchema = new mongoose.Schema(
   }
 );
 
-const Event = mongoose.model("Event", eventSchema);
-
-module.exports = Event;
+module.exports = mongoose.model("Event", eventSchema);
